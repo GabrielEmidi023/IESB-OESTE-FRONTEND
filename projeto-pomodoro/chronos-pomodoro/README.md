@@ -1,113 +1,101 @@
-# ♻️ Componentes Dinâmicos: Entendendo Props e Children
+# 🎨 Estruturando o Tema e CSS Global da Aplicação
 
-Nesta aula, vamos descobrir como deixar nossos componentes reutilizáveis.
-Afinal, um componente que exibe sempre o mesmo texto estático ("Olá Mundo") não
-é muito útil na prática! Aprenderemos a passar informações dinâmicas para dentro
-deles usando **Props**.
-
----
-
-## 🗿 1. O Problema: Componentes Estáticos
-
-Até agora, nosso componente `<Heading />` tinha o texto "Olá Mundo!" escrito
-diretamente (hardcoded) no JSX. Se o utilizarmos várias vezes no `App.jsx`,
-veremos exatamente a mesma frase repetida na tela.
-
-Para torná-lo útil, precisamos que o texto venha "de fora" (do arquivo pai) para
-"dentro" do componente.
+Chegou a hora de sairmos dos exemplos básicos de "Hello World" e começarmos a
+montar a estrutura real da nossa aplicação! Nesta aula, preparamos a fundação do
+nosso visual criando um sistema de cores com variáveis CSS e aplicando um
+_Reset_ global para padronizar o layout.
 
 ---
 
-## 📦 2. O Objeto `props`
+## 🌈 1. O Sistema de Variáveis (Design System)
 
-Todo componente React pode receber dados externos através de um parâmetro na sua
-função principal. Por convenção, chamamos esse parâmetro de **`props`**
-(abreviação de _properties_ ou propriedades).
+No arquivo `src/styles/theme.css`, vamos colar a nossa paleta de cores. Como a
+aplicação terá um Modo Claro e um Modo Escuro (começaremos pelo escuro),
+precisamos de uma estrutura sólida de variáveis.
 
-Se você der um `console.log(props)` num componente recém-criado sem passar nada,
-verá que ele é apenas um objeto JavaScript vazio `{}`.
+### Como nossas variáveis estão organizadas?
 
-```jsx
-export function Heading(props) {
-  console.log(props); // Retorna {} inicialmente
-  return <h1>Olá Mundo!</h1>;
+- **Tons de Cinza (`--gray-100` a `--gray-900`):** Usados para fundos e
+  elementos de interface. O `100` é o mais claro e o `900` é o mais escuro.
+- **Cor Primária:** Nosso tom de verde principal (`--primary`).
+- **Cores de Alerta (Feedbacks):** \* `--success` (Verde: operação bem-sucedida)
+  - `--warning` (Amarelo: atenção/aviso)
+  - `--error` (Vermelho: falha/erro)
+  - `--info` (Azul: informação neutra)
+- **Cores de Texto Baseadas no Fundo:** Criamos variáveis específicas para
+  textos que ficam _sobre_ fundos coloridos (ex: `text-on-primary`). Isso
+  garante que, mesmo quando mudarmos o tema de claro para escuro, o texto dentro
+  de um botão verde continue legível.
+- **Textos Gerais:** `--text-default` (cor principal da leitura), `--text-muted`
+  (textos secundários/apagados) e cores para elementos desativados (`disabled`).
+
+---
+
+## 🧹 2. Reset de CSS e Configuração do `rem`
+
+No arquivo `src/styles/global.css`, removemos os testes da aula anterior e
+configuramos a base do nosso projeto.
+
+### O Reset Básico
+
+Zeramos as margens e preenchimentos que o navegador aplica por padrão e
+ajustamos o modelo de caixa:
+
+```css
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 ```
 
-## 👶 3. A Propriedade Especial: children
+**O Truque do `{62.5% }`(Unidade REM)** O navegador, por padrão, tem o tamanho
+de fonte de `16px`. Trabalhar com a unidade relativa `rem` é uma excelente
+prática para acessibilidade e responsividade, mas calcular os valores de cabeça
+pode ser chato (ex: 20px seria 1.25rem).
 
-No HTML, nós colocamos textos e outros elementos dentro das tags (ex:
-`<p>Meu texto</p>`). Podemos fazer exatamente o mesmo com nossos componentes
-React!
+Para resolver isso, aplicamos um truque no `html`:
 
-Quando passamos algo entre a tag de abertura e a tag de fechamento de um
-componente, o React automaticamente pega esse conteúdo e o injeta dentro do
-objeto props, numa propriedade especial chamada `children` (filhos).
-
-No `App.jsx`:
-
-```javascript
-// Atenção: Agora usamos a tag de abertura e de fechamento!
-<Heading>Olá Mundo 1</Heading>
-<Heading>Olá Mundo 2</Heading>
-```
-
-## 🔑 4. Usando o JavaScript no JSX (As Chaves `{}`)
-
-Para exibir esse conteúdo dinâmico na tela, precisamos avisar ao JSX que vamos
-inserir um código JavaScript (no caso, acessar a variável `props.children`).
-Fazemos isso utilizando as chaves `{}`.
-
-No `Heading.jsx`:
-
-```javascript
-export function Heading(props) {
-  return <h1>{props.children}</h1>;
+```css
+html {
+  font-size: 62.5%;
 }
 ```
 
-Pronto! Agora o componente exibe exatamente o texto que foi passado para ele no
-App.jsx. Ele se tornou 100% reutilizável!
+**O que isso faz?** Reduz a fonte base de `16px` para `10px` (pois 62.5% de 16 =
+10). Agora, a matemática fica super simples: basta dividir o valor em pixels por
+10 e trocar o ponto!
 
-## 🎛️ 5. Passando Outras Propriedades (Atributos Customizados)
+- Quer 16px? Escreva 1.6rem.
+- Quer 25px? Escreva 2.5rem.
+- Quer 400px? Escreva 40rem.
 
-Além do conteúdo `children`, você pode inventar e passar qualquer outro atributo
-para o seu componente, de forma muito parecida com os atributos nativos do HTML
-(como `id`, `src`, `href`).
+## 📄 3. Estilizando o `body`
 
-No `App.jsx`:
+Ainda no `global.css`, aplicamos as configurações padrão para a nossa página
+inteira, consumindo as variáveis que criamos no arquivo de tema:
 
-```javascript
-<Heading atr1='minha string' atr2={123}>
-  Texto do Título
-</Heading>
-```
+```css
+body {
+  /* Tamanho base de 16px, graças ao truque do rem! */
+  font-size: 1.6rem;
 
-- **Strings estáticas:** Podem ser passadas entre aspas duplas "".
-- **Números, Variáveis, Objetos ou Booleanos:** Devem ser passados dentro de
-  chaves `{}`.
+  /* Fonte padrão do sistema operacional do usuário */
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 
-Se você inspecionar o `console.log(props)` no componente agora, verá o objeto
-preenchido com todos esses valores:
-
-```javascript
-{
-  atr1: "minha string",
-  atr2: 123,
-  children: "Texto do Título"
+  /* Aplicando nossas variáveis do tema escuro */
+  background-color: var(--gray-900);
+  color: var(--text-default);
 }
 ```
 
-Você poderá usar esses valores extras para alterar cores, tamanhos, ou adicionar
-lógicas de exibição dentro do seu componente.
+## 🔜 Próximos Passos
 
-## ⚠️ 6. O Aviso do TypeScript (Tipagem Implícita)
+Com o nosso CSS Global e Tema configurados, agora temos o fundo escuro e o texto
+claro aplicados corretamente na tela.
 
-Se você estiver utilizando TypeScript (arquivos `.tsx`), notará que a palavra
-`props` no parâmetro da função ficará sublinhada com um aviso de que ela possui
-o tipo implícito `any`.
-
-Isso ocorre porque o TypeScript ainda não sabe quais propriedades (e quais tipos
-de dados) o seu componente espera receber de fora. Na próxima aula, aprenderemos
-como "tipar" essas `props` para resolver esse aviso e garantir um código muito
-mais seguro e à prova de bugs!
+Na próxima aula, voltaremos ao nosso componente `<Heading />`. Vamos estilizá-lo
+e prepará-lo para ser flexível, pois em algumas páginas (como a de "Histórico")
+ele precisará renderizar um botão extra ao seu lado!
