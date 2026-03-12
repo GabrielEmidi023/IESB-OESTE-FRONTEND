@@ -1,127 +1,124 @@
-# 🚀 Criando o Componente Logo e Dicas de Produtividade
+# 🧭 Criando o Componente de Menu (Navegação)
 
-Nesta aula, vamos criar o nosso componente `<Logo />`. Em vez de começarmos um
-arquivo totalmente do zero, vamos aprender alguns truques de produtividade para
-reaproveitar a estrutura que já criamos e acelerar o nosso desenvolvimento!
-
----
-
-## ⚡ 1. Produtividade no VS Code
-
-### Duplicando Componentes
-
-Uma prática muito comum é copiar a pasta de um componente simples (como o
-`Heading`) e colar com o nome do novo componente (`Logo`). Isso já nos dá o
-arquivo `index.tsx` e o `styles.module.css` prontos!
-
-### O Truque do "Preserve Case" (Manter Maiúsculas/Minúsculas)
-
-Ao duplicar, precisamos trocar a palavra `heading` por `logo` em todo o arquivo.
-
-1. Selecione a palavra `Heading` e pressione `Ctrl + F` (ou `Cmd + F`).
-2. Digite `logo` no campo de substituição.
-3. **Dica de Ouro:** Clique no ícone de **"Preserve Case"** (um botão com as
-   letras `Aa` na caixinha de busca). Isso garante que onde estava `Heading`
-   (maiúsculo) vire `Logo`, e onde estava `heading` (minúsculo) vire `logo`.
-4. Clique em "Replace All".
-
-### Extensão Recomendada: Auto Rename Tag
-
-Vá na aba de extensões do VS Code e instale a **Auto Rename Tag**. Com ela,
-sempre que você alterar a tag de abertura (ex: de `<h1>` para `<div>`), ela
-altera automaticamente a tag de fechamento, poupando muito tempo!
+Nesta aula, vamos acelerar um pouco o passo! Como já entendemos a lógica de
+criação e estilização de componentes, vamos usar nossos truques de produtividade
+para construir o nosso Menu de navegação.
 
 ---
 
-## 🧩 2. Estruturando o Componente Logo
+## 🔧 1. Pequeno Ajuste na Logo
 
-Diferente do `Heading`, o nosso componente `Logo` é "autocontido". Ele não
-precisa receber textos de fora via `props.children`, pois o ícone e o nome do
-app ("Chronos") serão fixos.
+Antes de criarmos o Menu, vamos dar um pequeno ajuste no efeito de _hover_ da
+nossa Logo. Na aula anterior, colocamos o `brightness` em `50%`, mas ficou uma
+mudança um pouco drástica.
 
-Vamos importar o ícone `TimerIcon` da biblioteca `lucide-react` e montar a
-estrutura.
+Vamos suavizar isso no arquivo `src/components/Logo/styles.module.css`:
 
-**Arquivo:** `src/components/Logo/index.tsx` _(ou .jsx)_
+```css
+/* Antes era 50%, mude para 80% */
+.logoLink:hover {
+  filter: brightness(80%);
+}
+```
+
+## 🚀 2. Criando o Componente Menu
+
+Para ganhar tempo, vamos usar a mesma técnica da aula passada:
+
+1. Copie a pasta do componente `Logo`.
+2. Cole e renomeie a nova pasta para `Menu`.
+3. Use o _Find & Replace_ (`Ctrl + F`) com a opção Preserve Case (`Aa`) ativada
+   para trocar todas as palavras `Logo` por Menu (e `logo` por `menu`).
+
+Nosso Menu será uma barra de navegação (`<nav>`) contendo quatro botões de ação
+principais. Para os ícones, usaremos novamente o `lucide-react`.
+
+💡 **Dica de Ouro:** Repare que importamos os ícones com o sufixo `Icon` (ex:
+`SettingsIcon`). Fazemos isso para evitar conflitos de nomes. Se no futuro
+criarmos uma página chamada `Settings`, o nome não vai colidir com o ícone!
+
+**Arquivo:** `src/components/Menu/index.tsx`
 
 ```tsx
-import { TimerIcon } from 'lucide-react';
+import { HistoryIcon, HouseIcon, SettingsIcon, SunIcon } from 'lucide-react';
 import styles from './styles.module.css';
 
-export function Logo() {
+export function Menu() {
   return (
-    <div className={styles.logo}>
-      {/* Usamos a tag <a> provisoriamente. No futuro, trocaremos pelo Link do React Router */}
-      <a className={styles.logoLink} href='#'>
-        <TimerIcon />
-        <span>Chronos</span>
+    <nav className={styles.menu}>
+      {/* Futuramente, trocaremos a tag <a> por componentes de Link de um Router */}
+      <a className={styles.menuLink} href='#'>
+        <HouseIcon />
       </a>
-    </div>
+
+      <a className={styles.menuLink} href='#'>
+        <HistoryIcon />
+      </a>
+
+      <a className={styles.menuLink} href='#'>
+        <SettingsIcon />
+      </a>
+
+      <a className={styles.menuLink} href='#'>
+        <SunIcon />
+      </a>
+    </nav>
   );
 }
 ```
 
-## 🎨 3. Estilizando e Entendendo o `camelCase`
+## 🎨 3. Estilizando o Menu
 
-Por que usar `camelCase` no CSS Modules? No CSS tradicional, costumamos usar
-traços (ex: `.logo-link`). Porém, no CSS Modules, nós acessamos essas classes
-como propriedades de um objeto JavaScript. Se usarmos traço, teríamos que
-escrever `className={styles['logo-link']}`. Fica feio, não acha?
+Diferente da Logo, os links do nosso Menu terão um fundo colorido (usando nossa
+variável `--primary`) e as bordas arredondadas.
 
-Por isso, **usamos camelCase** no CSS Modules (ex: `.logoLink`). Assim, podemos
-escrever de forma limpa: `className={styles.logoLink}`.
+Abra o arquivo de estilos do Menu e limpe os códigos antigos da Logo para
+colocarmos os novos:
 
-**Adicionando os Estilos e Efeitos** Vamos alinhar o ícone em cima do texto
-usando `flex-direction: column` e adicionar uma transição suave de cor quando o
-usuário passar o mouse por cima (`hover`).
-
-**Arquivo:** `src/components/Logo/styles.module.css`
+**Arquivo:** `src/components/Menu/styles.module.css`
 
 ```css
-.logo {
+.menu {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2.4rem;
-  padding-top: 3.2rem;
+  gap: 1.6rem;
 }
 
-.logoLink {
-  display: flex;
-  flex-direction: column; /* Coloca o ícone em cima e o texto embaixo */
+.menuLink {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  gap: 0.4rem;
-  font-size: 4.2rem;
-  text-decoration: none; /* Remove a linha padrão de links */
-  color: var(--primary);
-  transition: all 0.1s ease-in-out; /* Transição suave */
+  text-decoration: none;
+  background: var(--primary);
+  /* A cor do ícone recebe a cor feita para contrastar com o primary */
+  color: var(--text-over-primary);
+  transition: all 0.1s ease-in-out;
+  padding: 1.2rem;
+  border-radius: 0.8rem;
 }
 
-/* Efeito ao passar o mouse: escurece a cor primária em 50% */
-.logoLink:hover {
-  filter: brightness(50%);
+.menuLink:hover {
+  filter: brightness(80%);
 }
 
-/* Alterando o tamanho do ícone SVG direto pelo CSS */
-.logoLink svg {
-  width: 6.4rem;
-  height: 6.4rem;
+.menuLink svg {
+  width: 2.4rem;
+  height: 2.4rem;
 }
 ```
 
-## 🧱 4. Integrando a Logo na Aplicação
+## 🧩 4. Adicionando o Menu ao App
 
-Agora que nossa Logo está pronta e estilizada, basta importá-la no nosso arquivo
-principal e colocá-la dentro do nosso `Container`!
+Para finalizar, vamos importar o nosso novo Menu no `App.tsx` e colocá-lo dentro
+de um `<Container />` para manter o nosso layout perfeitamente alinhado.
 
-**Arquivo:** `src/App.tsx` (ou .jsx)
+**Arquivo:** `src/App.tsx`
 
 ```tsx
-import { Heading } from './components/Heading';
 import { Container } from './components/Container';
 import { Logo } from './components/Logo';
+import { Menu } from './components/Menu';
 
 import './styles/theme.css';
 import './styles/global.css';
@@ -134,9 +131,14 @@ export function App() {
       </Container>
 
       <Container>
-        <Heading>MENU</Heading>
+        <Menu />
       </Container>
     </>
   );
 }
 ```
+
+**Reflexão:** No futuro, poderemos transformar cada link do menu em um
+componente separado ou receber os ícones via `children`, o que é uma excelente
+prática. Mas, por enquanto, o nosso foco é construir o layout visual da
+aplicação!
