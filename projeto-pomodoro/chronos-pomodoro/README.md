@@ -1,35 +1,112 @@
-# 📦 Refatorando o Layout: Criando o Componente Container
+# 📂 Organizando Componentes com Pastas e Index
 
-Na aula anterior, criamos uma estrutura de HTML com
-`<div className="container">` e `<div className="content">` para alinhar nosso
-layout. No entanto, percebemos que esse código iria se repetir em todas as
-seções do site (Logo, Menu, Formulário, Footer).
+À medida que o nosso projeto cresce, a quantidade de arquivos também aumenta. Um
+único componente pode precisar de um arquivo JSX/TSX, um arquivo CSS, um arquivo
+de testes, um arquivo de histórias (Storybook), etc. Se deixarmos tudo solto na
+pasta `src/components`, rapidamente teremos uma bagunça!
 
-No React, sempre que notamos repetição de interface, é um sinal claro de que
-devemos **criar um componente**!
+Nesta aula, vamos adotar uma arquitetura de pastas muito comum e profissional no
+mundo React.
 
 ---
 
-## 🛠️ 1. Criando o Componente `Container`
+## 🏗️ 1. A Estrutura de Pastas por Componente
 
-Vamos isolar essa estrutura repetitiva. Se quiser um desafio, tente criar este
-componente sozinho antes de olhar a resposta abaixo! Lembre-se que ele precisará
-receber elementos dentro dele (a propriedade `children`).
+Em vez de ter arquivos soltos, vamos criar uma pasta para **cada componente**. O
+nome da pasta será o nome do componente (em PascalCase).
 
-1. Crie o arquivo `src/components/Container.tsx` (ou `.jsx`).
-2. Defina a tipagem para receber o `children`.
+Vamos reestruturar o nosso `<Container />` e o nosso `<Heading />`.
+
+1. Dentro de `src/components/`, crie uma pasta chamada `Container`.
+2. Mova os arquivos do Container para dentro desta pasta.
+3. Repita o processo criando uma pasta `Heading` e movendo os arquivos do
+   Heading para lá.
+
+A sua estrutura ficará assim:
+
+```text
+src/
+└── components/
+    ├── Container/
+    │   ├── Container.tsx
+    │   └── Container.module.css
+    └── Heading/
+        ├── Heading.tsx
+        └── Heading.module.css
+```
+
+## 🪄 2. O Padrão `index.tsx` (O Truque de Mestre)
+
+Se deixarmos a estrutura como está acima, na hora de importar o componente no
+`App.tsx`, o caminho ficará redundante e feio:
 
 ```tsx
-// src/components/Container.tsx
-import { ReactNode } from 'react';
-import styles from './Container.module.css'; // Já vamos criar este arquivo!
+// ❌ Caminho redundante
+import { Container } from './components/Container/Container';
+```
 
-// 1. Tipagem: O Container vai abraçar outros elementos (ReactNode)
-type ContainerProps = {
-  children: ReactNode;
+Para resolver isso de forma elegante, vamos **renomear** o arquivo principal do
+componente (o `.tsx` ou `.jsx`) para `index.tsx`.
+
+O Node.js e o Vite são inteligentes: quando você aponta a importação para uma
+pasta, eles automaticamente procuram por um arquivo chamado `index` dentro dela.
+
+1. Renomeie `Container.tsx` para `index.tsx`.
+2. Renomeie `Heading.tsx` para `index.tsx`.
+
+Agora a importação fica limpa!
+
+```jsx
+// ✅ O Vite procura automaticamente o index.tsx dentro da pasta Container!
+import { Container } from './components/Container';
+```
+
+## 🎨 3. Padronizando o nome do CSS
+
+Para facilitar ainda mais (especialmente quando quisermos copiar e colar uma
+pasta para criar um novo componente rapidamente), vamos padronizar o nome do
+arquivo CSS de todos os nossos componentes.
+
+Em vez de `Container.module.css` ou `Heading.module.css`, vamos chamar
+simplesmente de `styles.module.css` dentro da pasta de cada componente.
+
+A estrutura final perfeita de um componente ficará assim:
+
+```plan
+src/components/Container/
+├── index.tsx          # A lógica e o JSX do componente
+└── styles.module.css  # O estilo isolado do componente
+```
+
+## 📝 4. Como Ficaram Nossos Arquivos Finais?
+
+Com a mudança do nome do arquivo CSS, não podemos esquecer de atualizar as
+nossas importações dentro de cada `index.tsx`. Veja como ficam os códigos finais
+dos nossos dois componentes já refatorados:
+
+**Componente Heading** **Arquivo:** `src/components/Heading/index.tsx`
+
+```tsx
+import styles from './styles.module.css';
+
+type HeadingProps = {
+  children: React.ReactNode;
 };
 
-// 2. Componente: Desestruturamos o children e aplicamos a estrutura base
+export function Heading({ children }: HeadingProps) {
+  return <h1 className={styles.heading}>{children}</h1>;
+}
+```
+
+**Componente Container** **Arquivo:** `src/components/Container/index.tsx`
+
+```tsx
+import styles from './styles.module.css';
+
+type ContainerProps = {
+  children: React.ReactNode;
+};
+
 export function Container({ children }: ContainerProps) {
   return (
     <div className={styles.container}>
@@ -39,80 +116,27 @@ export function Container({ children }: ContainerProps) {
 }
 ```
 
-## 🎨 2. Migrando o CSS para CSS Modules
+## ⚙️ 5. Dica de Produtividade no VS Code
 
-Na aula passada, colocamos as classes `.container` e `.content` no nosso arquivo
-global. Como agora temos um componente específico para isso, devemos isolar esse
-CSS para mantermos a organização (CSS Modules).
+Quando você tiver dezenas de componentes, você terá dezenas de abas abertas no
+VS Code chamadas apenas `index.tsx`. Isso pode ser muito confuso!
 
-1. Vá no arquivo src/styles/global.css e apague as classes `.container` e
-   `.content`.
-2. Crie um novo arquivo chamado `Container.module.css` na mesma pasta do seu
-   novo componente.
-3. Cole o CSS lá dentro:
+Para resolver isso, podemos configurar o VS Code para mostrar o nome da pasta
+pai ao lado do nome do arquivo na aba.
 
-```css
-/* src/components/Container.module.css */
+1. Na raiz do projeto, crie ou abra a pasta `.vscode`.
+2. Abra o arquivo `settings.json` (se não existir, pode criar).
+3. Adicione a seguinte configuração:
 
-.container {
-  max-width: 98rem;
-  margin: 0 auto;
-}
-
-.content {
-  padding: 3.2rem;
+```json
+{
+  "workbench.editor.labelFormat": "short"
 }
 ```
 
-_Nota: Ao usar CSS Modules, o React vai gerar nomes de classes únicos (ex:
-`Container_container__1a2b3`), garantindo que esse estilo nunca conflite com
-outras partes do site._
+Agora, as abas do seu VS Code mostrarão algo como `index.tsx Container` ou
+`index.tsx Heading`, facilitando muito a navegação!
 
-## 🧩 3. Composição de Componentes (O "Quebra-Cabeça" do React)
-
-A verdadeira mágica do React acontece quando começamos a colocar componentes
-dentro de outros componentes (Composição).
-
-Vamos voltar ao nosso arquivo principal (`App.tsx`) e substituir aquele monte de
-`<div>` solta pelos nossos novos componentes: o `<Container>` e o `<Heading>`.
-
-```tsx
-// src/App.tsx
-import { Container } from './components/Container';
-import { Heading } from './components/Heading';
-
-export function App() {
-  return (
-    <>
-      {/* Seção 1: Logo */}
-      <Container>
-        <Heading>Logo</Heading>
-      </Container>
-
-      {/* Seção 2: Menu */}
-      <Container>
-        <Heading>Menu</Heading>
-      </Container>
-    </>
-  );
-}
-```
-
-### 🧐 O que mudou?
-
-Olhe como o código do `App.tsx` ficou muito mais limpo e semântico!
-
-- O `<Container>` é responsável **apenas** por alinhar e dar espaçamento
-  (layout).
-- O `<Heading>` é responsável **apenas** por exibir um título padronizado.
-- Nós apenas encaixamos um dentro do outro!
-
-## 🔜 Próximos Passos (Spoiler!)
-
-Se você olhar o design final da nossa aplicação, notará que o Menu, a Logo e o
-Rodapé (Footer) se repetem de forma idêntica em **todas** as páginas (Página de
-Cronômetro, Página de Histórico, etc).
-
-Em breve, usaremos essa mesma lógica de composição para criar um grande
-**Template de Página (Layout)**, onde o cabeçalho e rodapé já ficam fixos, e nós
-só trocamos o "miolo" do conteúdo!
+💡 **Dica Extra:** Use o atalho `Ctrl + P` (ou `Cmd + P` no Mac) para buscar
+arquivos rapidamente pelo nome da pasta. Ex: digite "container" e o VS Code
+mostrará o `index.tsx` e o `styles.module.css` daquela pasta.
