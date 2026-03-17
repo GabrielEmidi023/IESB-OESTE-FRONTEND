@@ -1,91 +1,49 @@
-# ⏱️ Criando o CountDown e Dominando Fontes Responsivas
+# 📝 Estruturando o Formulário Inicial
 
-Bora lá para o próximo componente! Mesmo se a bateria da câmera acabar, o código
-não pode parar.
+Bora para o próximo passo! Agora vamos criar a estrutura do formulário que
+ficará logo abaixo do nosso cronômetro.
 
-Nesta aula, vamos criar o "coração" da nossa aplicação: o contador de tempo
-(`CountDown`). Além de estruturar o componente (que inicialmente terá um valor
-estático de `00:00`), vamos aprender uma técnica fantástica de CSS para deixar a
-tipografia 100% responsiva sem precisar de dezenas de _Media Queries_.
+Em vez de criarmos vários componentes separados logo de cara, vamos adotar uma
+estratégia muito comum: **primeiro vamos montar toda a estrutura HTML/JSX
+diretamente no arquivo principal (`App.tsx`) e adicionar um CSS global
+temporário.** Quando o layout base estiver funcionando, nós começamos a extrair
+as partes para componentes isolados.
 
 ---
 
-## 🏗️ 1. Criando o Componente CountDown
+## 🏗️ 1. A Estrutura de "Linhas" (FormRow)
 
-Para ganhar tempo, vamos repetir o processo das aulas anteriores: copie a pasta
-de um componente simples, cole e renomeie para `CountDown`.
+Para organizar o formulário, vamos agrupar os elementos em "caixas" ou "linhas"
+verticais. Cada grupo (como o input + label, ou os textos descritivos) ficará
+dentro de uma `<div>` com a classe `formRow`.
 
-Por enquanto, não precisamos receber propriedades (`props`), e o valor do
-relógio será inserido diretamente no texto. A lógica de contagem regressiva será
-implementada futuramente.
+### 💡 Dicas de Ouro desta etapa:
 
-**Arquivo:** `src/components/CountDown/index.tsx` (ou `.jsx`)
+1. **Acessibilidade:** Sempre conecte a sua `<label>` ao seu `<input>`. No
+   React, usamos a propriedade `htmlFor` na label apontando para o `id` do
+   input. Assim, se o usuário clicar no texto da label, o input já ganha o foco
+   automaticamente!
+2. **Produtividade no VS Code:** Precisa de um texto de preenchimento (dummy
+   text) rápido? Digite `lorem5` e aperte `Tab`. O VS Code vai gerar exatamente
+   5 palavras de texto _Lorem Ipsum_ para você.
 
-```tsx
-import styles from './styles.module.css';
+---
 
-export function CountDown() {
-  return <div className={styles.container}>00:00</div>;
-}
-```
+## 📝 2. Criando o Formulário no App.tsx
 
-## 📏 2. O Problema das Fontes Fixas
+Vamos adicionar mais um `<Container />` no final do nosso `App.tsx` e colocar a
+estrutura do formulário dentro dele.
 
-Se colocarmos um tamanho fixo gigante (ex: `font-size: 16rem`), o relógio ficará
-ótimo em monitores grandes. Porém, se abrirmos o site em um celular, o texto vai
-estourar os limites da tela, quebrando o layout.
-
-Se usarmos apenas a largura da tela (ex: `font-size: 30vw`), a fonte vai
-encolher infinitamente em telas pequenas e crescer infinitamente em telas
-gigantes. Precisamos de um "meio-termo" inteligente.
-
-.
-
-## 🪄 3. A Mágica do CSS `clamp()`
-
-Para resolver isso, usaremos a função nativa do CSS chamada `clamp()`. Ela
-funciona como um limitador inteligente, recebendo três valores:
-
-1. **Mínimo:** O menor tamanho que a fonte pode ter (`8rem`).
-2. **Ideal:** O tamanho adaptável baseado na largura da tela (`30vw`).
-3. **Máximo:** O limite de crescimento da fonte (`16rem`).
-
-Abra o arquivo de estilos e aplique o seguinte código:
-
-**Arquivo:** `src/components/CountDown/styles.module.css`
-
-```css
-.container {
-  font-size: clamp(8rem, 30vw, 16rem);
-  font-weight: bold;
-  text-align: center;
-  line-height: 1.3;
-}
-```
-
-## 🧠 Como o navegador lê isso?
-
-- A fonte tentará ocupar 30% da largura da tela (`30vw`).
-- Porém, se a tela for muito pequena (celulares), a fonte **nunca será menor
-  que** `8rem`.
-- E se a tela for muito grande (monitores ultrawide), a **fonte nunca passará
-  de** `16rem`.
-
-## 📱 4. Testando a Responsividade no Navegador
-
-Para garantir que nosso `clamp()` está funcionando perfeitamente, vamos
-adicionar o componente à nossa tela principal.
-
-**Arquivo:** `src/App.tsx` (ou `.jsx`)
+**Arquivo:** `src/App.tsx`
 
 ```tsx
 import { Container } from './components/Container';
 import { Logo } from './components/Logo';
+import { Menu } from './components/Menu';
+import { CountDown } from './components/CountDown';
 
 import './styles/theme.css';
 import './styles/global.css';
-import { Menu } from './components/Menu';
-import { CountDown } from './components/CountDown';
 
 export function App() {
   return (
@@ -93,17 +51,81 @@ export function App() {
       <Container>
         <Logo />
       </Container>
+
       <Container>
         <Menu />
       </Container>
+
       <Container>
         <CountDown />
+      </Container>
+
+      {/* Nossa nova estrutura de formulário */}
+      <Container>
+        <form className='form' action=''>
+          {/* Grupo 1: Label e Input */}
+          <div className='formRow'>
+            <label htmlFor='meuInput'>task</label>
+            <input id='meuInput' type='text' />
+          </div>
+
+          {/* Grupo 2: Texto de apoio */}
+          <div className='formRow'>
+            <p>Lorem ipsum dolor sit amet.</p>
+          </div>
+
+          {/* Grupo 3: Ciclos */}
+          <div className='formRow'>
+            <p>Ciclos</p>
+            <p>0 0 0 0 0 0 0</p>
+          </div>
+
+          {/* Grupo 4: Botão */}
+          <div className='formRow'>
+            <button>Enviar</button>
+          </div>
+        </form>
       </Container>
     </>
   );
 }
 ```
 
-Abra o projeto no navegador, pressione `F12` (DevTools) e clique no ícone de
-Dispositivos para simular telas de celulares como o iPhone SE ou Galaxy S8. Você
-notará que o relógio se ajusta perfeitamente sem quebrar o layout!
+## 🎨 3. Estilização Base (Temporária)
+
+Como os nossos elementos dentro do formulário e das "linhas" precisam ficar
+centralizados e empilhados (um embaixo do outro), vamos usar muito o nosso amigo
+**Flexbox**.
+
+Por enquanto, vamos colocar essas classes no nosso CSS Global. Em aulas futuras,
+moveremos isso para os estilos de seus próprios componentes.
+
+Abra o seu arquivo global e adicione as classes `.form` e `.formRow` no final:
+
+**Arquivo:** `src/styles/global.css`
+
+```css
+/* ... resto do seu código global (reset, body, html) ... */
+
+/* Centralizando e empilhando os itens do formulário */
+.form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2.4rem;
+}
+
+/* O mesmo alinhamento para o conteúdo interno de cada "linha" */
+.formRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2.4rem;
+}
+```
+
+Se você olhar no navegador agora, verá que a estrutura básica e os espaçamentos
+já estão lá! O visual dos botões e inputs ainda está com o padrão feio do
+navegador, mas o esqueleto centralizado está pronto.
