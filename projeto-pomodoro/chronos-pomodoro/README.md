@@ -1,129 +1,98 @@
-# ⌨️ Construindo o Componente de Input e Dominando TypeScript
+# 🎛️ Finalizando o Input: Textos Dinâmicos e Operador Rest/Spread
 
-Agora vamos começar a extrair os elementos do nosso formulário para componentes
-independentes. O primeiro será o Input!
-
-Se você reparar no design original do projeto, os inputs da tela principal
-(Home) e os inputs da tela de configurações são visualmente idênticos. A única
-diferença é a cor interna. Isso é o cenário perfeito para criarmos um componente
-reutilizável!
-
-Nesta aula, não vamos focar tanto no CSS, mas sim na estrutura do componente e
-em conceitos essenciais de **TypeScript**.
+Nesta aula, vamos continuar evoluindo o nosso componente `DefaultInput`. O
+objetivo agora é tornar o texto da `<label>` dinâmico e garantir que nosso
+componente aceite **qualquer propriedade** que um input HTML nativo aceita, sem
+precisarmos declará-las uma por uma.
 
 ---
 
-## 🏗️ 1. Extraindo o Componente Input
+## 🏷️ 1. Tornando o Texto da Label Dinâmico
 
-Vamos criar um novo componente chamado `DefaultInput` (você pode chamar só de
-`Input` se preferir, mas `DefaultInput` ajuda a evitar confusões com a tag HTML
-padrão).
-
-Como o nosso Input sempre vem acompanhado de uma `<label>`, vamos retornar os
-dois elementos juntos. Porém, o React/JSX não permite retornar dois elementos
-irmãos soltos (sem um "pai" em volta).
-
-Para resolver isso sem adicionar `<div>`s desnecessárias que podem quebrar o
-layout, usamos o **Fragmento (`<> </>`)**.
+O nosso input ainda está com a label fixada como "task". Vamos criar uma nova
+propriedade chamada `labelText` para que possamos alterar esse texto quando
+formos usar o componente.
 
 **Arquivo:** `src/components/DefaultInput/index.tsx`
 
 ```tsx
-export function DefaultInput() {
-  return (
-    // Fragmento (<> ... </>) agrupa os elementos sem criar tags extras no HTML
-    <>
-      <label htmlFor='meuInput'>task</label>
-      <input id='meuInput' type='text' />
-    </>
-  );
+type DefaultInputProps = {
+  id: string;
+  labelText: string; // Nova propriedade adicionada!
+} & React.ComponentProps<'input'>;
+```
+
+## 💡 Parênteses Rápido: Condicionais no JSX
+
+Durante a aula, exploramos a ideia de tornar o `labelText` opcional (adicionando
+um `?` no tipo: `labelText?: string`). Se ele fosse opcional, não poderíamos
+renderizar uma tag `<label>` vazia no HTML.
+
+Para resolver isso, usamos **Renderização Condicional** com o operador `&&` do
+JavaScript dentro do JSX:
+
+```tsx
+// Se labelText existir, renderiza a tag. Se não existir, não faz nada.
+{
+  labelText && <label htmlFor={id}>{labelText}</label>;
 }
 ```
 
-## 🧠 2. Tipando Propriedades com TypeScript
+_Observação: Decidimos voltar atrás e deixar o `labelText` obrigatório, pois no
+layout do nosso projeto todos os inputs possuem uma label. Mas é essencial
+conhecer essa técnica de condicional!_
 
-Se deixarmos o código como acima, o nosso input será engessado: o `id` sempre
-será "meuInput" e o `type` sempre será "text". Nós precisamos receber essas
-informações dinamicamente através das **props**.
+## 🎭 2. O Poder do Operador Rest/Spread (`...rest`)
 
-## ❌ O problema de tipar tudo manualmente
+Nossa tipagem com `React.ComponentProps<'input'>` já informa ao TypeScript que
+nosso componente aceita propriedades como `disabled`, `required`, `placeholder`,
+etc.
 
-Poderíamos criar um tipo simples como fazíamos antes:
+Porém, se passarmos essas propriedades lá no `App.tsx`, elas não vão chegar na
+tag `<input>` real do HTML, porque não as conectamos dentro do nosso componente.
 
-```tsx
-type DefaultInputProps = {
-  id: string;
-  type: string; // Isso aceitaria qualquer palavra, até type="blabla", o que quebraria o HTML!
-};
-```
+Para não precisarmos declarar dezenas de propriedades nas props, usamos o
+operador **Rest** (`...rest`) na desestruturação, e o operador **Spread**
+({`...rest`}) na tag HTML.
 
-### 🔀 Solução Parcial: Union Types (`|`)
+**Como funciona:**
 
-Para evitar que o desenvolvedor passe tipos inválidos, poderíamos usar os
-**Union Types** do TypeScript. O caracter Pipe (`|`) funciona como um operador
-"OU".
-
-```tsx
-type DefaultInputProps = {
-  // O tipo será 'text' OU 'number' OU 'search'
-  type: 'text' | 'number' | 'search';
-};
-```
-
-Isso é muito mais seguro! Se tentarmos passar `type="blabla"`, o TypeScript vai
-dar erro.
-
-Porém, a tag `<input>` do HTML possui mais de 300 propriedades possíveis
-(`placeholder`, `onChange`, `onBlur`, `disabled`, `required`, etc.). Não faz
-sentido digitarmos todas elas na mão, certo?
-
-## 🪄 3. O Truque de Mestre: Intersection Types (`&`) e `ComponentProps`
-
-Para herdar **todas** as propriedades nativas que uma tag HTML já possui, o
-React nos fornece uma tipagem chamada `React.ComponentProps<'tag'>`.
-
-E para juntarmos as propriedades nativas com as nossas propriedades
-customizadas, usamos o **Intersection Type**. O caracter "E comercial" (`&`)
-funciona como um operador "E" (junta tudo).
-
-Veja como fica a tipagem profissional do nosso componente:
+1. Extraímos o `id`, `type` e `labelText` para usarmos explicitamente.
+2. Agrupamos "todo o resto" (rest) das propriedades dentro de um objeto chamado
+   rest.
+3. Despejamos (spread) esse objeto diretamente na tag `<input>`.
 
 **Arquivo:** `src/components/DefaultInput/index.tsx`
 
 ```tsx
 import React from 'react';
 
-// O nosso tipo terá:
-// 1. A nossa prop customizada "id" (forçando ela a ser obrigatória como string)
-// & (E)
-// 2. Todas as props que um <input> normal já aceita (type, placeholder, onChange...)
 type DefaultInputProps = {
   id: string;
+  labelText: string;
 } & React.ComponentProps<'input'>;
 
-// Desestruturamos apenas o id e o type por enquanto
-export function DefaultInput({ id, type }: DefaultInputProps) {
+export function DefaultInput({
+  id,
+  type,
+  labelText,
+  ...rest // 1. Pega todas as outras propriedades (disabled, required, etc)
+}: DefaultInputProps) {
   return (
     <>
-      <label htmlFor={id}>task</label>
-      <input id={id} type={type} />
+      <label htmlFor={id}>{labelText}</label>
+      {/* 2. Despeja o restante das propriedades direto no input */}
+      <input id={id} type={type} {...rest} />
     </>
   );
 }
 ```
 
-💡 **Dica:** Ao forçar o `id: string` no nosso tipo, garantimos que o
-desenvolvedor **nunca esqueça** de passar o `id`. Sem ele, nossa `<label>`
-perderia a conexão de acessibilidade com o `<input>`!
+## 🚀 3. Testando o Novo Input
 
-## 🧩 4. Usando o Componente Tipado
-
-Agora vamos importar o nosso super componente lá no `App.tsx` e substituir o
-HTML antigo.
-
-Se você digitar `type=""` no VS Code, perceberá que o autocompletar
-(IntelliSense) vai sugerir inteligentemente todos os tipos reais de input do
-HTML (password, email, number, etc.), graças à nossa tipagem avançada!
+Agora podemos ir no nosso `App.tsx` e usar o componente de forma completa. Tente
+adicionar atributos nativos do HTML como `disabled` ou `required` para ver a
+mágica do `...rest` funcionando!
 
 **Arquivo:** `src/App.tsx`
 
@@ -132,7 +101,7 @@ import { Container } from './components/Container';
 import { Logo } from './components/Logo';
 import { Menu } from './components/Menu';
 import { CountDown } from './components/CountDown';
-import { DefaultInput } from './components/DefaultInput'; // <-- Importado
+import { DefaultInput } from './components/DefaultInput';
 
 import './styles/theme.css';
 import './styles/global.css';
@@ -153,8 +122,13 @@ export function App() {
       <Container>
         <form className='form' action=''>
           <div className='formRow'>
-            {/* O TypeScript nos obriga a passar o "id" aqui! */}
-            <DefaultInput id='meuInput' type='text' />
+            {/* Agora passamos o labelText e podemos passar qualquer prop nativa! */}
+            <DefaultInput
+              id='meuInput'
+              type='text'
+              labelText='task'
+              /* Tente adicionar: disabled ou placeholder="Digite algo" */
+            />
           </div>
 
           <div className='formRow'>
