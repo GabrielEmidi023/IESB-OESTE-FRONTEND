@@ -28,7 +28,46 @@ precisamos de uma estrutura sólida de variáveis.
   de um botão verde continue legível.
 - **Textos Gerais:** `--text-default` (cor principal da leitura), `--text-muted`
   (textos secundários/apagados) e cores para elementos desativados (`disabled`).
+### variáveis do theme.css
+```css
+:root {
+  --gray-100: #e6e9f0;
+  --gray-200: #cdd3e1;
+  --gray-300: #aab3cc;
+  --gray-400: #555f7d;
+  --gray-500: #454f6a;
+  --gray-600: #363d56;
+  --gray-700: #272f43;
+  --gray-800: #181f2e;
+  --gray-900: #0a0f1a;
 
+  --primary-light: #4de7b7;
+  --primary: #0da170;
+  --primary-dark: #065f46;
+
+  --link-color: #10b981;
+  --link-hover: #0b8a60;
+
+  --success: #22c55e;
+  --warning: #eab308;
+  --error: #991b1b;
+  --info: #0ea5e9;
+
+  --text-over-primary: #0a0f1a;
+  --text-over-primary-dark: #e6e9f0;
+  --text-over-primary-light: #0a0f1a;
+  --text-over-success: #0a0f1a;
+  --text-over-warning: #0a0f1a;
+  --text-over-error: #e6e9f0;
+  --text-over-info: #0a0f1a;
+
+  --text-default: #e6e9f0;
+  --text-muted: #aab3cc;
+
+  --disabled: #555f7d;
+  --text-disabled: #aab3cc;
+}
+```
 ---
 
 ## 🧹 2. Reset de CSS e Configuração do `rem`
