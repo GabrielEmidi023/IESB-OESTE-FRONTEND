@@ -1,114 +1,85 @@
-# ⏯️ Criando o Botão Principal e Explorando Propriedades Dinâmicas
+# 🦶 Criando o Footer: Rodapé Dinâmico e Finalizando o Layout
 
-Chegamos ao elemento principal de interação do nosso usuário: o botão de
-Play/Stop!
+Para fechar com chave de ouro a estrutura visual da nossa página principal,
+vamos criar o rodapé (Footer). Ele será um componente bem simples, focado em
+exibir links de navegação e informações de direitos autorais.
 
-Se você observar o design da aplicação, o botão muda de verde (Play) para
-vermelho (Stop), além de trocar o ícone. Como a estrutura é exatamente a mesma,
-não vamos criar dois botões diferentes; vamos criar **um único componente
-inteligente** que recebe propriedades (`props`) para mudar seu visual e
-conteúdo.
+Nesta aula, a grande sacada é aprender a inserir caracteres especiais e valores
+dinâmicos (como o ano atual) diretamente no seu JSX!
 
----
+## 🏗️ 1. O Componente Footer e Datas Dinâmicas
 
-## 🏗️ 1. A Estrutura e Tipagem do Botão (DefaultButton)
+Crie a pasta `Footer` dentro de `components`, com os arquivos `index.tsx` e
+`styles.module.css`.
 
-Para ganhar tempo, você pode copiar a pasta do `DefaultInput` e renomear para
-`DefaultButton` (lembre-se de alterar as ocorrências da palavra "input" para
-"button" no código).
+Aqui, usaremos duas dicas muito úteis:
 
-Vamos precisar de duas propriedades customizadas:
+1. **Símbolo de Copyright:** No HTML/JSX, podemos renderizar o símbolo "©"
+   usando a entidade HTML `&copy;`.
+2. **Ano Automático:** Para não termos que atualizar o código todo dia 1º de
+   janeiro, abrimos as chaves `{}` no JSX para executar JavaScript puro e
+   pegamos o ano atual utilizando o método nativo `new Date().getFullYear()`.
 
-1. **`icon`:** Vai receber o componente de ícone do _Lucide React_. O tipo ideal
-   para receber elementos React como propriedade é o `React.ReactNode`.
-2. **`color`:** Vai aceitar apenas duas strings específicas (`'green'` ou
-   `'red'`). Faremos ela ser opcional (`?`) e daremos um valor padrão de
-   `'green'` na desestruturação.
-
-**Arquivo:** `src/components/DefaultButton/index.tsx`
+**Arquivo:** `src/components/Footer/index.tsx`
 
 ```tsx
 import styles from './styles.module.css';
 
-type DefaultButtonProps = {
-  icon: React.ReactNode; // Aceita componentes, texto, HTML, etc.
-  color?: 'green' | 'red'; // Union Type: Só aceita essas duas strings
-} & React.ComponentProps<'button'>; // Herda as propriedades nativas de um botão (onClick, disabled, etc)
-
-export function DefaultButton({
-  icon,
-  color = 'green', // Valor padrão: se ninguém enviar a cor, será verde!
-  ...props
-}: DefaultButtonProps) {
+export function Footer() {
   return (
-    <>
-      {/* A Mágica do CSS Modules Dinâmico:
-        Usamos colchetes styles[color] para acessar a classe CSS de forma dinâmica.
-        Se color for 'red', o React lê: styles['red'] e aplica a classe .red do CSS!
-      */}
-      <button className={`${styles.button} ${styles[color]}`} {...props}>
-        {icon}
-      </button>
-    </>
+    <footer className={styles.footer}>
+      <a href=''>Entenda como funciona a técnica pomodoro</a>
+      <a href=''>
+        {/* O &copy; vira © e o JS traz o ano atual dinamicamente! */}
+        Chronos Pomodoro &copy; {new Date().getFullYear()} - Feito com 💚
+      </a>
+    </footer>
   );
 }
 ```
 
-## 🎨 2. Estilizando o Botão e os Modificadores de Cor
+💡 **Dica de atalho:** Se você estiver no Windows e quiser usar emojis (como o
+coração verde), pressione `Win + Ponto (.)` para abrir o painel de emojis do
+sistema!
 
-No CSS, teremos uma classe base (`.button`) que define o tamanho, os espaços e
-os alinhamentos. Depois, teremos as classes "modificadoras" (`.green` e `.red`)
-que apenas injetam as cores específicas.
+## 🎨 2. Estilizando os Links
 
-💡 **Dica de CSS:** Ao invés de colocar uma classe diretamente no ícone, podemos
-usar o seletor `.button svg` para estilizar qualquer SVG que caia dentro do
-nosso botão.
+Nosso CSS será focado em organizar os itens usando Flexbox em formato de coluna.
+Também vamos criar um feedback visual suave para quando o usuário passar o mouse
+por cima dos links (`:hover`).
 
-**Arquivo:** `src/components/DefaultButton/styles.module.css`
+**Arquivo:** `src/components/Footer/styles.module.css`
 
 ```css
-/* Estilo Base do Botão */
-.button {
-  border: none;
+.footer {
   display: flex;
+  flex-direction: column; /* Empilha os links um embaixo do outro */
   align-items: center;
   justify-content: center;
-  min-width: 24rem;
-  padding: 0.8rem;
-  border-radius: 0.8rem;
-  margin: 4.8rem 0;
-  cursor: pointer;
-  transition: all 0.1s ease-in-out;
+  font-size: 1.2rem;
+  gap: 1.6rem;
 }
 
-/* O ícone do Lucide React é renderizado como um <svg> */
-.button svg {
-  width: 3.2rem;
-  height: 3.2rem;
+.footer a {
+  color: var(--text-muted); /* Cor mais apagadinha para ficar discreto */
+  text-decoration: none; /* Remove o sublinhado padrão de links */
 }
 
-/* Efeito de Hover escurecendo o botão dinamicamente */
-.button:hover {
-  filter: brightness(80%);
-}
-
-/* --- Classes Modificadoras de Cor --- */
-.green {
-  background: var(--primary);
-  color: var(--text-over-primary);
-}
-
-.red {
-  background: var(--error);
-  color: var(--text-over-error);
+/* Feedback visual interativo */
+.footer a:hover {
+  color: var(--text-muted);
+  text-decoration: underline; /* Devolve o sublinhado ao passar o mouse */
 }
 ```
 
-## 🚀 3. Renderizando os Botões no App.tsx
+## 🚀 3. Concluindo a Tela Inicial no App.tsx
 
-Agora vamos testar a flexibilidade do nosso componente! Vamos renderizar os dois
-estados do botão lado a lado lá no nosso formulário principal para garantir que
-nossas propriedades opcionais e obrigatórias estão funcionando.
+Agora, basta importar o `<Footer />` no final do nosso App.tsx, envolvendo-o no
+nosso componente `<Container />`.
+
+Aproveitaremos também para dar uma limpada no código: deixaremos apenas um
+`<DefaultButton>` (o verde de Play) dentro do formulário, removendo o botão
+extra vermelho que usamos para testes na aula passada.
 
 **Arquivo:** `src/App.tsx`
 
@@ -119,10 +90,9 @@ import { Menu } from './components/Menu';
 import { CountDown } from './components/CountDown';
 import { DefaultInput } from './components/DefaultInput';
 import { Cycles } from './components/Cycles';
-import { DefaultButton } from './components/DefaultButton'; // <-- Importado!
-
-// Importando os ícones do pacote lucide-react (Certifique-se de ter instalado!)
-import { PlayCircleIcon, StopCircleIcon } from 'lucide-react';
+import { DefaultButton } from './components/DefaultButton';
+import { PlayCircleIcon } from 'lucide-react';
+import { Footer } from './components/Footer'; // <-- Importado!
 
 import './styles/theme.css';
 import './styles/global.css';
@@ -130,7 +100,15 @@ import './styles/global.css';
 export function App() {
   return (
     <>
-      {/* ... containers anteriores (Logo, Menu, CountDown) ... */}
+      <Container>
+        <Logo />
+      </Container>
+      <Container>
+        <Menu />
+      </Container>
+      <Container>
+        <CountDown />
+      </Container>
 
       <Container>
         <form className='form' action=''>
@@ -151,22 +129,21 @@ export function App() {
             <Cycles />
           </div>
 
-          {/* Testando os nossos botões dinâmicos */}
           <div className='formRow'>
-            {/* Como o color padrão é 'green', não precisamos passar a prop aqui! */}
-            <DefaultButton icon={<PlayCircleIcon />} color='green' />
-
-            {/* Forçando o botão a ser vermelho e mudando o ícone */}
-            <DefaultButton icon={<StopCircleIcon />} color='red' />
+            {/* Mantivemos apenas o botão principal de Play */}
+            <DefaultButton icon={<PlayCircleIcon />} />
           </div>
         </form>
+      </Container>
+
+      {/* Nosso novo rodapé entra aqui, no seu próprio Container! */}
+      <Container>
+        <Footer />
       </Container>
     </>
   );
 }
 ```
 
-O legal de travar as propriedades via TypeScript (`'green'` | `'red'`) é que se
-um desenvolvedor no futuro tentar passar `color='blue'`, o próprio VS Code vai
-avisar que existe um erro antes mesmo de rodar o código. Isso previne muitos
-bugs na interface!
+Com isso, a estrutura visual básica da nossa página Home está montada e
+funcionando perfeitamente (inclusive no mobile)! 🎉
