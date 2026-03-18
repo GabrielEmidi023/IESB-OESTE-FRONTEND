@@ -1,140 +1,101 @@
-# 🌗 Alternador de Temas: Acessibilidade, Tipagem e Eventos
+# 🌓 Alternando o Tema e o Problema dos Efeitos Colaterais
 
-Nesta aula, daremos início à criação do nosso alternador de tema (Dark/Light
-Mode) que ficará no componente `Menu`.
+Nesta aula, vamos implementar a lógica para alternar o valor do nosso estado
+entre `dark` e `light`.
 
-A estratégia que vamos utilizar não depende de bibliotecas complexas: usaremos
-**CSS puro com variáveis** e manipularemos um atributo diretamente na tag
-`<html>` (`data-theme`). Quando o React mudar esse atributo, o CSS aplicará o
-novo conjunto de cores automaticamente!
+No entanto, também vamos tentar aplicar essa mudança diretamente na tag `<html>`
+do navegador e descobrir por que a abordagem mais instintiva **não funciona**
+como esperado no React.
 
 ---
 
-## 🎨 1. Configurando o CSS e o HTML Base
+## 🔄 1. A Lógica de Inversão do Tema
 
-Primeiro, vamos ao nosso arquivo base HTML para definir o idioma e o tema
-padrão. Depois, no nosso arquivo de temas CSS, adicionaremos as variáveis
-invertidas para o tema claro.
+Quando clicamos no botão de mudar o tema, queremos que o React olhe para o tema
+atual e o inverta. Como o novo valor depende do valor anterior, usaremos a
+função de callback dentro do nosso `setTheme`.
 
-**Arquivo:** `index.html`
-
-```html
-<html lang="pt-BR" data-theme="dark"></html>
+```tsx
+setTheme(prevTheme => {
+  // Se for dark, vira light. Senão, vira dark.
+  const nextTheme = prevTheme === 'dark' ? 'light' : 'dark';
+  return nextTheme;
+});
 ```
 
-**Arquivo:** `src/styles/theme.css`
+### ❌ O que dá errado?
 
-```css
-/* Quando a tag :root (html) tiver o atributo data-theme='light', 
-   essas variáveis irão sobrescrever as variáveis padrão (dark)! */
-:root[data-theme='light'] {
-  --gray-100: #0a0f1a;
-  --gray-200: #181f2e;
-  --gray-300: #272f43;
-  --gray-400: #363d56;
-  --gray-500: #454f6a;
-  --gray-600: #555f7d;
-  --gray-700: #aab3cc;
-  --gray-800: #cdd3e1;
-  --gray-900: #e6e9f0;
+Se você clicar no botão, a interface do React muda, mas o HTML fica atrasado em
+um clique! Isso acontece porque a função `setTheme` **não muda o valor em tempo
+real**. O React agenda essa atualização para o próximo ciclo de renderização.
+Quando a linha do `setAttribute` é executada, a variável `theme` ainda guarda o
+valor velho.
 
-  --text-default: #0a0f1a;
-  --text-muted: #272f43;
+## 🚨 3. A "Gambiarra" (Má Prática)
 
-  --link-color: #0b8a60;
-  --link-hover: #065f46;
-}
+Para resolver esse "atraso", nós poderíamos pensar em mover a manipulação do DOM
+para dentro da função de callback do `setTheme`, já que lá nós sabemos
+exatamente qual é o `nextTheme`.
+
+```tsx
+setTheme(prevTheme => {
+  const nextTheme = prevTheme === 'dark' ? 'light' : 'dark';
+
+  // 🔴 MÁ PRÁTICA: Alterando o DOM de dentro de uma função de estado
+  // document.documentElement.setAttribute('data-theme', nextTheme);
+
+  return nextTheme;
+});
 ```
 
-## ♿ 2. Acessibilidade no Menu
+**Por que não devemos fazer isso?** A função que passamos para o `setTheme` deve
+ser uma **Função Pura**. Isso significa que ela deve apenas calcular e retornar
+um valor, sem causar interferências no mundo externo.
 
-Nossos links do menu atualmente possuem apenas ícones. Se uma pessoa utilizar um
-leitor de tela, ela não fará ideia do que cada botão faz. Além disso, usuários
-comuns não têm um tooltip visual indicando a ação.
+Manipular o DOM (`document.documentElement...`) é o que chamamos de **Efeito
+Colateral**. O React não está monitorando o DOM diretamente dessa forma. Fazer
+coisas que o React não espera dentro de uma função de atualização de estado pode
+causar bugs difíceis de rastrear na sua aplicação.
 
-Vamos resolver isso adicionando os atributos `aria-label` (para leitores de
-tela) e `title` (para mostrar o textinho ao passar o mouse).
+## 💡 4. A Solução Definitiva: Preparando o Terreno
 
-## 🧠 3. O Estado, a Tipagem e o `preventDefault`
+Se nós não podemos colocar efeitos colaterais soltos na função de clique (por
+causa do atraso) e nem dentro do `setTheme` (porque é má prática), onde nós
+colocamos?
 
-Para o botão de mudar o tema funcionar, precisamos de um estado (`useState`)
-para saber em qual tema estamos no momento.
+Sempre que precisarmos lidar com coisas que fogem do monitoramento padrão do
+React (manipular o DOM puro, salvar no `localStorage`, buscar dados em uma API),
+nós precisamos de um Hook específico para lidar com **Efeitos Colaterais**.
 
-**Tipagem Estrita** Para evitar que alguém coloque `setTheme('azul')`, vamos
-criar um tipo literal (`AvailableThemes`) garantindo que nosso estado só aceite
-`'dark'` ou `'light'`.
+Na próxima aula, vamos conhecer e aplicar o Hook `useEffect` para resolver esse
+problema do jeito certo.
 
-**Prevenindo Comportamentos Padrões** Nosso botão de tema é uma tag de link
-(`<a>`). Por padrão, clicar em um link recarrega a página ou tenta navegar para
-o endereço do `href`. Como estamos fazendo um aplicativo de página única (SPA),
-não queremos isso! Usaremos o `event.preventDefault()` para cancelar essa
-navegação padrão. O TypeScript exige que tipemos esse evento corretamente
-(`React.MouseEvent<HTMLAnchorElement, MouseEvent>`).
-
-**Arquivo:** `src/components/Menu/index.tsx`
+**Arquivo temporário (`src/components/Menu/index.tsx`):**
 
 ```tsx
 import { HistoryIcon, HouseIcon, SettingsIcon, SunIcon } from 'lucide-react';
 import styles from './styles.module.css';
 import { useState } from 'react';
 
-// Tipagem restrita: O tema SÓ pode ser 'dark' ou 'light'
 type AvailableThemes = 'dark' | 'light';
 
 export function Menu() {
   const [theme, setTheme] = useState<AvailableThemes>('dark');
 
-  // Tipagem do evento de clique em um link (âncora) no React
-  function handleThemeChange(
-    event: React.MouseEvent<HTMLAnchorElement, MouseEvent>,
-  ) {
-    event.preventDefault(); // Impede que o navegador siga o link (href='#')
+  function handleThemeChange(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
+    event.preventDefault();
 
-    console.log('Clicado', Date.now());
+    setTheme((prevTheme) => {
+      const nextTheme = prevTheme === 'dark' ? 'light' : 'dark';
+      // ❌ document.documentElement.setAttribute('data-theme', nextTheme); (Má prática)
+      return nextTheme;
+    });
+
+    // ❌ document.documentElement.setAttribute('data-theme', theme); (Fica atrasado)
   }
 
   return (
-    <nav className={styles.menu}>
-      {/* Texto temporário para vermos o estado atual na tela */}
-      <h1>{theme}</h1>
-
-      <a
-        className={styles.menuLink}
-        href='#'
-        aria-label='Ir para a Home'
-        title='Ir para a Home'
-      >
-        <HouseIcon />
-      </a>
-
-      <a
-        className={styles.menuLink}
-        href='#'
-        aria-label='Ver Histórico'
-        title='Ver Histórico'
-      >
-        <HistoryIcon />
-      </a>
-
-      <a
-        className={styles.menuLink}
-        href='#'
-        aria-label='Configurações'
-        title='Configurações'
-      >
-        <SettingsIcon />
-      </a>
-
-      <a
-        className={styles.menuLink}
-        href='#'
-        aria-label='Mudar Tema'
-        title='Mudar Tema'
-        onClick={handleThemeChange}
-      >
-        <SunIcon />
-      </a>
-    </nav>
+    // ... JSX do menu (inalterado)
   );
 }
 ```
