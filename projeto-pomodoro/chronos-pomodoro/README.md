@@ -1,101 +1,162 @@
-# 🌓 Alternando o Tema e o Problema dos Efeitos Colaterais
+# 🪝 Dominando Efeitos Colaterais com o `useEffect`
 
-Nesta aula, vamos implementar a lógica para alternar o valor do nosso estado
-entre `dark` e `light`.
+Na aula passada, vimos que manipular o DOM diretamente ou buscar dados externos
+(ações que o React não monitora nativamente) são considerados **Efeitos
+Colaterais**. Tentar fazer isso diretamente no corpo do componente ou dentro de
+um `setState` causa bugs de assincronicidade ou quebra as regras do React.
 
-No entanto, também vamos tentar aplicar essa mudança diretamente na tag `<html>`
-do navegador e descobrir por que a abordagem mais instintiva **não funciona**
-como esperado no React.
+Para resolver isso, o React nos fornece um Hook específico: o `useEffect`.
 
 ---
 
-## 🔄 1. A Lógica de Inversão do Tema
+## 🛠️ 1. As Três Formas de Usar o `useEffect`
 
-Quando clicamos no botão de mudar o tema, queremos que o React olhe para o tema
-atual e o inverta. Como o novo valor depende do valor anterior, usaremos a
-função de callback dentro do nosso `setTheme`.
+O `useEffect` recebe dois parâmetros:
+
+1. Uma função (o efeito em si que você quer executar).
+2. Um array de dependências (opcional), que dita **quando** esse efeito deve
+   rodar.
+
+Dependendo de como você passa esse array, o `useEffect` se comporta de três
+maneiras diferentes.
+
+### A) Sem Array de Dependências (Cuidado! ⚠️)
+
+Se você não passar o segundo parâmetro, a função executará **toda vez que o
+componente for renderizado**.
 
 ```tsx
-setTheme(prevTheme => {
-  // Se for dark, vira light. Senão, vira dark.
-  const nextTheme = prevTheme === 'dark' ? 'light' : 'dark';
-  return nextTheme;
+useEffect(() => {
+  console.log(
+    'Executado toda vez que qualquer estado/prop mudar e o componente renderizar',
+  );
 });
 ```
 
-### ❌ O que dá errado?
+_Geralmente evitamos essa forma, pois se um componente renderiza muito, seu
+efeito colateral (como uma chamada de API) vai rodar repetidas vezes sem
+necessidade, travando a aplicação._
 
-Se você clicar no botão, a interface do React muda, mas o HTML fica atrasado em
-um clique! Isso acontece porque a função `setTheme` **não muda o valor em tempo
-real**. O React agenda essa atualização para o próximo ciclo de renderização.
-Quando a linha do `setAttribute` é executada, a variável `theme` ainda guarda o
-valor velho.
-
-## 🚨 3. A "Gambiarra" (Má Prática)
-
-Para resolver esse "atraso", nós poderíamos pensar em mover a manipulação do DOM
-para dentro da função de callback do `setTheme`, já que lá nós sabemos
-exatamente qual é o `nextTheme`.
+**B) Com Array de Dependências Vazio `[]` (O "On Mount")** Se você passar um
+array vazio, você está dizendo ao React: _"Esse efeito não depende de nenhuma
+variável para atualizar"_. Portanto, ele só vai executar **uma única vez**, logo
+após o componente ser montado (aparecer na tela) pela primeira vez.
 
 ```tsx
-setTheme(prevTheme => {
-  const nextTheme = prevTheme === 'dark' ? 'light' : 'dark';
-
-  // 🔴 MÁ PRÁTICA: Alterando o DOM de dentro de uma função de estado
-  // document.documentElement.setAttribute('data-theme', nextTheme);
-
-  return nextTheme;
-});
+useEffect(() => {
+  console.log('Executa APENAS uma vez, quando o componente é montado na tela');
+}, []);
 ```
 
-**Por que não devemos fazer isso?** A função que passamos para o `setTheme` deve
-ser uma **Função Pura**. Isso significa que ela deve apenas calcular e retornar
-um valor, sem causar interferências no mundo externo.
+_Muito útil para buscar os dados iniciais de uma API logo que o usuário entra na
+página._
 
-Manipular o DOM (`document.documentElement...`) é o que chamamos de **Efeito
-Colateral**. O React não está monitorando o DOM diretamente dessa forma. Fazer
-coisas que o React não espera dentro de uma função de atualização de estado pode
-causar bugs difíceis de rastrear na sua aplicação.
+**C) Com Variáveis no Array de Dependências (O que usaremos! ✅)** Se você
+passar uma variável dentro do array, o React vai observar essa variável. O
+efeito será executado na primeira renderização E **toda vez que essa variável
+específica mudar de valor**.
 
-## 💡 4. A Solução Definitiva: Preparando o Terreno
+```tsx
+useEffect(() => {
+  console.log('O tema mudou para:', theme);
+  // É AQUI o lugar correto para manipular o DOM com o valor atualizado!
+  document.documentElement.setAttribute('data-theme', theme);
+}, [theme]); // O efeito "escuta" o estado `theme`
+```
 
-Se nós não podemos colocar efeitos colaterais soltos na função de clique (por
-causa do atraso) e nem dentro do `setTheme` (porque é má prática), onde nós
-colocamos?
+Dessa forma, resolvemos nosso problema de atraso! Agora, sempre que o botão de
+tema for clicado, o estado `theme` muda. O React percebe a mudança, renderiza a
+tela e, só depois disso, aciona nosso `useEffect` passando o valor já atualizado
+para o HTML.
 
-Sempre que precisarmos lidar com coisas que fogem do monitoramento padrão do
-React (manipular o DOM puro, salvar no `localStorage`, buscar dados em uma API),
-nós precisamos de um Hook específico para lidar com **Efeitos Colaterais**.
+## 🧹 2. A Função de Limpeza (Clean-up Function)
 
-Na próxima aula, vamos conhecer e aplicar o Hook `useEffect` para resolver esse
-problema do jeito certo.
+E se o nosso efeito colateral for iniciar um cronômetro (`setInterval`) ou
+adicionar um ouvinte de eventos global (`addEventListener`)? Se o componente for
+destruído (o usuário mudar de página, por exemplo), esse cronômetro continuará
+rodando em background, causando vazamento de memória e travamentos (a "sujeira"
+da qual falamos).
 
-**Arquivo temporário (`src/components/Menu/index.tsx`):**
+Para evitar isso, o `useEffect` permite que você retorne uma função de dentro
+dele. Essa é a **Clean-up Function** (Função de Limpeza).
+
+```tsx
+useEffect(() => {
+  // 1. O efeito roda e cria algo (ex: um setInterval)
+
+  return () => {
+    // 2. O React engatilha essa função e a executa ANTES de rodar
+    // o efeito novamente ou ANTES de destruir o componente da tela.
+    // Aqui é onde você limpa a "sujeira" (ex: clearInterval).
+    console.log('Limpando o efeito anterior antes de atualizar...');
+  };
+}, [theme]);
+```
+
+**O Ciclo de Vida do nosso Menu ao clicar no botão:**
+
+1. Você clica e muda o `theme` para `light`.
+2. O React prepara para rodar o `useEffect` com o novo valor.
+3. ANTES disso, ele roda a função de limpeza (o `return`) do `useEffect`
+   anterior (que ainda era `dark`).
+4. Ele roda o novo `useEffect` aplicando o tema `light` no HTML.
+
+## 🚀 3. O Código Final do Menu
+
+Aqui está o código atualizado do nosso componente Menu, aplicando o `useEffect`
+da maneira correta e removendo a "gambiarra" da aula passada.
+
+**Arquivo:** `src/components/Menu/index.tsx`
 
 ```tsx
 import { HistoryIcon, HouseIcon, SettingsIcon, SunIcon } from 'lucide-react';
 import styles from './styles.module.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type AvailableThemes = 'dark' | 'light';
 
 export function Menu() {
   const [theme, setTheme] = useState<AvailableThemes>('dark');
 
-  function handleThemeChange(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
+  // A função de clique agora apenas muda o estado. Ponto.
+  function handleThemeChange(
+    event: React.MouseEvent<HTMLAnchorElement, MouseEvent>,
+  ) {
     event.preventDefault();
 
-    setTheme((prevTheme) => {
-      const nextTheme = prevTheme === 'dark' ? 'light' : 'dark';
-      // ❌ document.documentElement.setAttribute('data-theme', nextTheme); (Má prática)
-      return nextTheme;
+    setTheme(prevTheme => {
+      return prevTheme === 'dark' ? 'light' : 'dark';
     });
-
-    // ❌ document.documentElement.setAttribute('data-theme', theme); (Fica atrasado)
   }
 
+  // O Efeito Colateral que escuta o estado e reflete no HTML
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // Função de limpeza (apenas didática neste momento)
+    return () => {
+      console.log('Limpando efeito anterior...');
+    };
+  }, [theme]); // Array de dependências observando o 'theme'
+
   return (
-    // ... JSX do menu (inalterado)
+    <nav className={styles.menu}>
+      {/* ... JSX dos links (inalterado) ... */}
+
+      <a
+        className={styles.menuLink}
+        href='#'
+        aria-label='Mudar Tema'
+        title='Mudar Tema'
+        onClick={handleThemeChange}
+      >
+        <SunIcon />
+      </a>
+    </nav>
   );
 }
 ```
+
+Nosso alternador de tema está funcionando perfeitamente sem atrasos! No entanto,
+se o usuário recarregar a página (F5), o tema volta para o `dark`, pois o estado
+é reiniciado.
