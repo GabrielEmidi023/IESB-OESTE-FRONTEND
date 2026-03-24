@@ -1,209 +1,99 @@
-# 📝 Componente `GenericHtml`: Estilizando Páginas de Texto
+# 📊 Modelando o Estado Global da Aplicação
 
-Até agora, focamos muito em componentes interativos. Mas e quando precisamos de
-páginas focadas em texto, como um "Sobre nós" ou uma "Página 404"? Ficar
-adicionando classes CSS em cada tag `<p>`, `<h2>` ou `<ul>` seria exaustivo.
+Antes de sairmos criando múltiplos `useState` espalhados pelos componentes,
+precisamos dar um passo atrás e planejar: **como os dados da nossa aplicação vão
+se comportar?** Nossa aplicação Chronos Pomodoro possui um timer, um histórico
+de tarefas, configurações de tempo e controle de ciclos. Como todos esses dados
+precisam "conversar" entre si (o timer precisa saber a configuração de tempo, o
+histórico precisa saber quando o timer acaba), vamos centralizar tudo em um
+**Estado Global**.
 
-Nesta aula, vamos criar o componente `GenericHtml`. A ideia dele é simples: ele
-abraça qualquer conteúdo HTML puro e aplica uma estilização global a ele através
-do CSS Modules. Assim, ganhamos flexibilidade e reaproveitamento de código!
+Nesta aula, vamos criar as tipagens (Models) que definirão o formato exato desse
+estado.
 
 ---
 
-## 🏗️ 1. Criando o Componente `GenericHtml`
+## 🏗️ 1. O Modelo da Tarefa (`TaskModel`)
 
-Vamos criar uma pasta para o nosso componente e definir que ele receberá
-`children` (o conteúdo HTML que colocaremos dentro dele).
+Primeiro, vamos definir como é o formato de uma única tarefa dentro do nosso
+histórico. Crie uma pasta `models` dentro de `src` e adicione o arquivo abaixo.
 
-**Arquivo:** `src/components/GenericHtml/index.tsx`
+Optamos por usar `type` em vez de `interface` ou `class` pois nossos modelos não
+terão lógica embutida, serão apenas a representação visual dos dados.
+
+**Arquivo:** `src/models/TaskModel.ts`
+
+```typescript
+import type { TaskStateModel } from './TaskStateModel';
+
+export type TaskModel = {
+  id: string; // Identificador único da tarefa
+  name: string; // Nome digitado no input
+  duration: number; // Duração em minutos
+  startDate: number; // Timestamp de quando começou (usamos number para facilitar o localStorage)
+  complete
+```
+
+💡 **Por que usar `number` para as datas?** Ao invés de usar o objeto Date
+nativo do JavaScript, vamos salvar as datas usando `Date.now()`, que retorna um
+número (timestamp). Isso facilita imensamente na hora de salvar e recuperar do
+`localStorage`, pois números não perdem formatação ao serem transformados em
+JSON.
+
+## 🌍 2. O Modelo do Estado Global (`TaskStateModel`)
+
+Agora, vamos definir o "Coração" da nossa aplicação: o objeto que vai guardar
+absolutamente tudo o que está acontecendo no momento.
+
+**Arquivo:** `src/models/TaskStateModel.ts`
 
 ```tsx
-import styles from './styles.module.css';
+import type { TaskModel } from './TaskModel';
 
-type GenericHtmlProps = {
-  children: React.ReactNode;
+export type TaskStateModel = {
+  // 1. O Histórico: Um array contendo todas as tarefas já feitas ou em andamento
+  tasks: TaskModel[];
+
+  // 2. Controle do Timer
+  secondsRemaining: number; // Quantos segundos faltam no cronômetro atual
+  formattedSecondsRemaining: string; // O texto pronto para a tela (ex: "25:00")
+  activeTask: TaskModel | null; // Qual tarefa está rodando AGORA (se houver)
+
+  // 3. Controle do Ciclo Pomodoro
+  currentCycle: number; // Vai de 1 a 8 (controla as bolinhas coloridas)
+
+  // 4. Configurações do Usuário
+  config: {
+    workTime: number; // Tempo de foco (ex: 25)
+    shortBreakTime: number; // Descanso curto (ex: 5)
+    longBreakTime: number; // Descanso longo (ex: 15)
+  };
 };
-
-export function GenericHtml({ children }: GenericHtmlProps) {
-  return <div className={styles.genericHtml}>{children}</div>;
-}
 ```
 
-## O CSS Modular
+## 🧠 3. Entendendo o `keyof` (TypeScript Avançado)
 
-Aqui é onde a mágica acontece. Estilizamos as tags diretamente, mas **apenas**
-quando elas estiverem dentro da classe `.genericHtml`.
-
-**Arquivo:** `src/components/GenericHtml/styles.module.css`
-
-```css
-.genericHtml h1 {
-  font-size: 3.2rem;
-  margin-bottom: 1.6rem;
-}
-
-.genericHtml h2 {
-  font-size: 2.4rem;
-  margin-bottom: 1.2rem;
-}
-
-.genericHtml h3 {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-}
-
-.genericHtml p {
-  font-size: 1.6rem;
-  line-height: 1.6;
-  margin-bottom: 1.6rem;
-}
-
-.genericHtml a {
-  color: var(--link-color);
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.genericHtml a:hover {
-  text-decoration: underline;
-}
-
-.genericHtml ul {
-  padding-left: 2.4rem;
-}
-
-.genericHtml li {
-  margin-bottom: 0.8rem;
-}
-
-.genericHtml img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 0.8rem;
-  display: block;
-  margin: 1.6rem 0;
-}
-```
-
-## 🚀 2. Aplicando nas Páginas
-
-Agora que temos o nosso "estilizador automático" de textos, vamos aplicá-lo em
-duas páginas: a nossa página de Erro 404 e uma nova página que explica a Técnica
-Pomodoro.
-
-💡 **Dica:** Como o conteúdo dessas páginas é puramente texto (HTML), você pode
-simplesmente copiar os códigos abaixo para economizar tempo de digitação.
-
-**Página 404 Atualizada** **Arquivo:** `src/pages/NotFound/index.tsx`
+No arquivo `TaskModel.ts`, nós definimos a propriedade `type` da seguinte forma:
 
 ```tsx
-import { Container } from '../../components/Container';
-import { GenericHtml } from '../../components/GenericHtml';
-import { Heading } from '../../components/Heading';
-import { MainTemplate } from '../../templates/MainTemplate';
-
-export function NotFound() {
-  return (
-    <MainTemplate>
-      <Container>
-        <GenericHtml>
-          <Heading>404 - Página não encontrada 🚀</Heading>
-          <p>
-            Opa! Parece que a página que você está tentando acessar não existe.
-            Talvez ela tenha tirado férias, resolvido explorar o universo ou se
-            perdido em algum lugar entre dois buracos negros. 🌌
-          </p>
-          <p>
-            Mas calma, você não está perdido no espaço (ainda). Dá pra voltar em
-            segurança para a <a href='/'>página principal</a> ou{' '}
-            <a href='/history'>para o histórico</a> — ou pode ficar por aqui e
-            fingir que achou uma página secreta que só os exploradores mais
-            legais conseguem acessar. 🧭✨
-          </p>
-          <p>
-            Se você acha que essa página deveria existir (ou se quiser bater um
-            papo sobre viagem no tempo e buracos de minhoca), é só entrar em
-            contato. Caso contrário, use o menu para voltar ao mundo real.
-          </p>
-          <p>
-            Enquanto isso, fica aqui uma reflexão: "Se uma página não existe na
-            internet, será que ela existiu de verdade?" 🤔💭
-          </p>
-        </GenericHtml>
-      </Container>
-    </MainTemplate>
-  );
-}
+type: keyof TaskStateModel['config'];
 ```
 
-**Nova Página: Sobre o Pomodoro** Crie a pasta `AboutPomodoro` dentro de `pages`
-e cole o conteúdo:
+O que isso faz? Nós precisamos saber se a tarefa atual é de trabalho
+(`workTime`), descanso curto (`shortBreakTime`) ou descanso longo
+(`longBreakTime`). Repare que esses são exatamente os mesmos nomes das chaves do
+objeto config que acabamos de criar no TaskStateModel.
 
-**Arquivo:** `src/pages/AboutPomodoro/index.tsx`
+Ao usar o `keyof`, estamos dizendo ao TypeScript: "_O `type` da tarefa só pode
+ser uma string que seja idêntica ao nome de uma das chaves do `config`_".
 
-```tsx
-import { Container } from '../../components/Container';
-import { GenericHtml } from '../../components/GenericHtml';
-import { Heading } from '../../components/Heading';
-import { MainTemplate } from '../../templates/MainTemplate';
+Se amanhã adicionarmos uma nova configuração chamada `extraTime` dentro de
+config, o TypeScript automaticamente aceitará `extraTime` como um tipo de tarefa
+válido, sem precisarmos alterar dois arquivos diferentes. Isso evita repetição
+de código (o famoso princípio DRY - Don't Repeat Yourself)!
 
-export function AboutPomodoro() {
-  return (
-    <MainTemplate>
-      <Container>
-        <GenericHtml>
-          <Heading>A Técnica Pomodoro 🍅</Heading>
+## 🎯 Próximos Passos
 
-          <p>
-            A Técnica Pomodoro é uma metodologia de produtividade criada por{' '}
-            <strong>Francesco Cirillo</strong>, que consiste em dividir o
-            trabalho em blocos de tempo intercalados com pausas.
-          </p>
-
-          <img
-            src='[https://placehold.co/1920x1080](https://placehold.co/1920x1080)'
-            alt='Exemplo'
-          />
-
-          <h2>Como funciona o Pomodoro tradicional?</h2>
-          <ul>
-            <li>
-              <strong>1. Defina uma tarefa</strong> que você deseja realizar.
-            </li>
-            <li>
-              <strong>2. Trabalhe nela por 25 minutos</strong> sem interrupções.
-            </li>
-            <li>
-              <strong>3. Faça uma pausa curta de 5 minutos</strong>.
-            </li>
-            <li>
-              <strong>4. A cada 4 ciclos, faça uma pausa longa</strong> (15 a 30
-              minutos).
-            </li>
-          </ul>
-
-          <h2>
-            Mas no <strong>Chronos Pomodoro</strong> tem um diferencial 🚀
-          </h2>
-          <p>
-            Nosso app segue o conceito original, mas com algumas melhorias e
-            personalizações pra deixar o processo ainda mais eficiente.
-          </p>
-
-          {/* Pode adicionar o resto do texto explicativo aqui! */}
-        </GenericHtml>
-      </Container>
-    </MainTemplate>
-  );
-}
-```
-
-## 🛠️ 3. Testando as Páginas
-
-Para ver se tudo ficou bonito, vá até o seu `App.tsx` e troque temporariamente o
-componente `<Home />` por `<NotFound />` ou `<AboutPomodoro />`. Você vai
-perceber que os títulos, parágrafos e listas já assumiram um espaçamento e
-tamanho de fonte muito agradáveis, com suporte nativo ao nosso tema
-claro/escuro!
-
-Volte o `App.tsx` para `<Home />` quando terminar de testar.
+Agora que temos o "molde" perfeito de como nossos dados devem se comportar,
+estamos prontos para criar o Estado real da aplicação usando o `useState` e,
+futuramente, a Context API.
