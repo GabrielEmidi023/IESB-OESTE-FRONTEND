@@ -1,99 +1,70 @@
-# 📊 Modelando o Estado Global da Aplicação
+# 🤔 Onde colocar o Estado da Aplicação? (Elevação de Estado)
 
-Antes de sairmos criando múltiplos `useState` espalhados pelos componentes,
-precisamos dar um passo atrás e planejar: **como os dados da nossa aplicação vão
-se comportar?** Nossa aplicação Chronos Pomodoro possui um timer, um histórico
-de tarefas, configurações de tempo e controle de ciclos. Como todos esses dados
-precisam "conversar" entre si (o timer precisa saber a configuração de tempo, o
-histórico precisa saber quando o timer acaba), vamos centralizar tudo em um
-**Estado Global**.
-
-Nesta aula, vamos criar as tipagens (Models) que definirão o formato exato desse
-estado.
+Nesta aula, demos uma pausa no código para entender um dos conceitos mais
+cruciais do React: **Onde o Estado (State) deve morar?** Quando criamos a
+mudança de temas (Dark/Light), o estado vivia tranquilamente dentro do
+componente `Menu`, porque apenas ele e o arquivo HTML precisavam saber dessa
+informação. Mas agora, com o `TaskStateModel` que criamos na aula anterior, o
+buraco é mais embaixo.
 
 ---
 
-## 🏗️ 1. O Modelo da Tarefa (`TaskModel`)
+## 🗺️ O Mapa das Dependências
 
-Primeiro, vamos definir como é o formato de uma única tarefa dentro do nosso
-histórico. Crie uma pasta `models` dentro de `src` e adicione o arquivo abaixo.
+Vamos analisar quem precisa saber das informações do nosso timer:
 
-Optamos por usar `type` em vez de `interface` ou `class` pois nossos modelos não
-terão lógica embutida, serão apenas a representação visual dos dados.
+1. **`tasks` (O Histórico):**
+   - A página de Histórico (para listar as tarefas).
+   - O formulário da Home (para adicionar uma nova tarefa à lista quando o
+     usuário der o play).
+2. **`secondsRemaining` e `activeTask` (O Timer):**
+   - O componente `Countdown` (para mostrar os números diminuindo).
+   - O formulário (para saber se o botão deve ser "Iniciar" ou "Interromper").
+   - O `<title>` da página (para mostrar o tempo na aba do navegador).
+3. **`config` (As Configurações de Tempo):**
+   - A página de Configurações (para o usuário alterar os valores).
+   - O Timer (para saber de quanto tempo ele deve começar a contagem
+     regressiva).
 
-**Arquivo:** `src/models/TaskModel.ts`
+---
 
-```typescript
-import type { TaskStateModel } from './TaskStateModel';
+## 🏗️ O Problema do Fluxo de Dados no React
 
-export type TaskModel = {
-  id: string; // Identificador único da tarefa
-  name: string; // Nome digitado no input
-  duration: number; // Duração em minutos
-  startDate: number; // Timestamp de quando começou (usamos number para facilitar o localStorage)
-  complete
-```
+No React, o fluxo de dados é **Unidirecional (Top-Down)**. Isso significa que a
+informação flui como uma cachoeira: de cima (Pai) para baixo (Filho), através
+das `props`.
 
-💡 **Por que usar `number` para as datas?** Ao invés de usar o objeto Date
-nativo do JavaScript, vamos salvar as datas usando `Date.now()`, que retorna um
-número (timestamp). Isso facilita imensamente na hora de salvar e recuperar do
-`localStorage`, pois números não perdem formatação ao serem transformados em
-JSON.
+- Um componente Pai pode passar dados para o Filho.
+- Um componente Filho **não pode** passar dados diretamente para um "componente
+  irmão" (ex: o `Countdown` não consegue enviar dados direto para o `MainForm`).
 
-## 🌍 2. O Modelo do Estado Global (`TaskStateModel`)
+### A Solução: Elevação de Estado (Lifting State Up)
 
-Agora, vamos definir o "Coração" da nossa aplicação: o objeto que vai guardar
-absolutamente tudo o que está acontecendo no momento.
+Se dois ou mais componentes precisam do mesmo estado, nós precisamos "elevar"
+esse estado até o componente que seja Pai de ambos.
 
-**Arquivo:** `src/models/TaskStateModel.ts`
+No nosso caso, como a página `Home` (que tem o timer) e a página `History` (que
+tem a lista) precisam dos mesmos dados, o estado não pode morar dentro da
+`Home`. Ele precisa morar um nível acima!
 
-```tsx
-import type { TaskModel } from './TaskModel';
+Por enquanto, o componente que está acima de todas as páginas é o nosso
+**`App.tsx`**.
 
-export type TaskStateModel = {
-  // 1. O Histórico: Um array contendo todas as tarefas já feitas ou em andamento
-  tasks: TaskModel[];
+---
 
-  // 2. Controle do Timer
-  secondsRemaining: number; // Quantos segundos faltam no cronômetro atual
-  formattedSecondsRemaining: string; // O texto pronto para a tela (ex: "25:00")
-  activeTask: TaskModel | null; // Qual tarefa está rodando AGORA (se houver)
+## 🚀 O Plano de Ação (Próximas Aulas)
 
-  // 3. Controle do Ciclo Pomodoro
-  currentCycle: number; // Vai de 1 a 8 (controla as bolinhas coloridas)
+1. **A Dor (Prop Drilling):** Primeiramente, vamos criar nosso estado gigante
+   dentro do `App.tsx` e ir passando ele via `props` (propriedades) por várias
+   camadas: do `App` para a `Home`, da `Home` para o `MainForm`, do `MainForm`
+   para o `Button`. Isso vai gerar um código bem poluído e difícil de manter.
+2. **O Remédio (Context API):** Depois de sentirmos essa dor na prática, vamos
+   aprender a melhor forma de resolver isso no React: criando um **Contexto**. O
+   Contexto funciona como uma "nuvem" de dados na nossa aplicação; qualquer
+   componente, não importa o quão fundo ele esteja na árvore, pode acessar a
+   nuvem diretamente sem precisar de repasses intermináveis de `props`.
 
-  // 4. Configurações do Usuário
-  config: {
-    workTime: number; // Tempo de foco (ex: 25)
-    shortBreakTime: number; // Descanso curto (ex: 5)
-    longBreakTime: number; // Descanso longo (ex: 15)
-  };
-};
-```
+---
 
-## 🧠 3. Entendendo o `keyof` (TypeScript Avançado)
-
-No arquivo `TaskModel.ts`, nós definimos a propriedade `type` da seguinte forma:
-
-```tsx
-type: keyof TaskStateModel['config'];
-```
-
-O que isso faz? Nós precisamos saber se a tarefa atual é de trabalho
-(`workTime`), descanso curto (`shortBreakTime`) ou descanso longo
-(`longBreakTime`). Repare que esses são exatamente os mesmos nomes das chaves do
-objeto config que acabamos de criar no TaskStateModel.
-
-Ao usar o `keyof`, estamos dizendo ao TypeScript: "_O `type` da tarefa só pode
-ser uma string que seja idêntica ao nome de uma das chaves do `config`_".
-
-Se amanhã adicionarmos uma nova configuração chamada `extraTime` dentro de
-config, o TypeScript automaticamente aceitará `extraTime` como um tipo de tarefa
-válido, sem precisarmos alterar dois arquivos diferentes. Isso evita repetição
-de código (o famoso princípio DRY - Don't Repeat Yourself)!
-
-## 🎯 Próximos Passos
-
-Agora que temos o "molde" perfeito de como nossos dados devem se comportar,
-estamos prontos para criar o Estado real da aplicação usando o `useState` e,
-futuramente, a Context API.
+Prepare-se, porque na próxima aula vamos começar a construir o motor do nosso
+timer dentro do `App.tsx`!
