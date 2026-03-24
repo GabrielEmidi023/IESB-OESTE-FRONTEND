@@ -1,172 +1,209 @@
-# 🏗️ Refatoração: Arquitetura de Templates e Páginas
+# 📝 Componente `GenericHtml`: Estilizando Páginas de Texto
 
-Nossa aplicação está crescendo! Se olharmos para o nosso design, perceberemos
-que a `Logo`, o `Menu` e o `Footer` estarão presentes em todas as telas (Home,
-Histórico, Configurações). A única coisa que muda é o "miolo" (o conteúdo
-central).
+Até agora, focamos muito em componentes interativos. Mas e quando precisamos de
+páginas focadas em texto, como um "Sobre nós" ou uma "Página 404"? Ficar
+adicionando classes CSS em cada tag `<p>`, `<h2>` ou `<ul>` seria exaustivo.
 
-Nesta aula, vamos organizar nossa arquitetura separando responsabilidades. Vamos
-criar o conceito de **Templates** (para o layout fixo) e **Pages** (para as
-telas específicas).
+Nesta aula, vamos criar o componente `GenericHtml`. A ideia dele é simples: ele
+abraça qualquer conteúdo HTML puro e aplica uma estilização global a ele através
+do CSS Modules. Assim, ganhamos flexibilidade e reaproveitamento de código!
 
 ---
 
-## 🧩 1. Extraindo o Formulário (`MainForm`)
+## 🏗️ 1. Criando o Componente `GenericHtml`
 
-Primeiro, vamos tirar aquele formulário gigante do meio do arquivo e
-transformá-lo em um componente próprio.
+Vamos criar uma pasta para o nosso componente e definir que ele receberá
+`children` (o conteúdo HTML que colocaremos dentro dele).
 
-**Arquivo:** `src/components/MainForm/index.tsx`
-
-```tsx
-import { PlayCircleIcon } from 'lucide-react';
-import { Cycles } from '../Cycles';
-import { DefaultButton } from '../DefaultButton';
-import { DefaultInput } from '../DefaultInput';
-
-export function MainForm() {
-  return (
-    <form className='form' action=''>
-      <div className='formRow'>
-        <DefaultInput
-          labelText='task'
-          id='meuInput'
-          type='text'
-          placeholder='Digite algo'
-        />
-      </div>
-
-      <div className='formRow'>
-        <p>Lorem ipsum dolor sit amet.</p>
-      </div>
-
-      <div className='formRow'>
-        <Cycles />
-      </div>
-
-      <div className='formRow'>
-        <DefaultButton icon={<PlayCircleIcon />} />
-      </div>
-    </form>
-  );
-}
-```
-
-## 🖼️ 2. Criando o Template Principal (MainTemplate)
-
-Um Template é um componente que define o esqueleto da página. Ele recebe as
-partes fixas (cabeçalho, rodapé) e usa a propriedade `children` do React para
-renderizar o conteúdo dinâmico no meio.
-
-**💡 Dica de Ouro do VS Code:** Ao criar um novo arquivo, você pode digitar o
-caminho completo (ex: `templates/MainTemplate/index.tsx`) e o VS Code criará as
-pastas automaticamente! Se a visualização das pastas ficar espremida em uma
-linha só, vá nas configurações do VS Code e desmarque a opção **Explorer:**
-**Compact Folders** (`explorer.compactFolders: false`).
-
-**Arquivo:** `src/templates/MainTemplate/index.tsx`
+**Arquivo:** `src/components/GenericHtml/index.tsx`
 
 ```tsx
-import { Container } from '../../components/Container';
-import { Footer } from '../../components/Footer';
-import { Logo } from '../../components/Logo';
-import { Menu } from '../../components/Menu';
+import styles from './styles.module.css';
 
-type MainTemplateProps = {
-  children: React.ReactNode; // Tipagem para aceitar elementos React dentro da tag
+type GenericHtmlProps = {
+  children: React.ReactNode;
 };
 
-export function MainTemplate({ children }: MainTemplateProps) {
-  return (
-    <>
-      <Container>
-        <Logo />
-      </Container>
-
-      <Container>
-        <Menu />
-      </Container>
-
-      {/* Aqui é onde o conteúdo específico de cada página será injetado */}
-      {children}
-
-      <Container>
-        <Footer />
-      </Container>
-    </>
-  );
+export function GenericHtml({ children }: GenericHtmlProps) {
+  return <div className={styles.genericHtml}>{children}</div>;
 }
 ```
 
-## 📄 3. Criando as Páginas (Pages)
+## O CSS Modular
 
-Agora, criamos uma pasta `pages` para representar nossas telas. Cada tela vai
-"vestir" o nosso `MainTemplate`.
+Aqui é onde a mágica acontece. Estilizamos as tags diretamente, mas **apenas**
+quando elas estiverem dentro da classe `.genericHtml`.
 
-**A Página Principal (Home)** **Arquivo:** `src/pages/Home/index.tsx`
+**Arquivo:** `src/components/GenericHtml/styles.module.css`
 
-```tsx
-import { Container } from '../../components/Container';
-import { CountDown } from '../../components/CountDown';
-import { MainForm } from '../../components/MainForm';
-import { MainTemplate } from '../../templates/MainTemplate';
+```css
+.genericHtml h1 {
+  font-size: 3.2rem;
+  margin-bottom: 1.6rem;
+}
 
-export function Home() {
-  return (
-    <MainTemplate>
-      {/* Tudo o que está aqui dentro é o "children" que o template vai renderizar */}
-      <Container>
-        <CountDown />
-      </Container>
+.genericHtml h2 {
+  font-size: 2.4rem;
+  margin-bottom: 1.2rem;
+}
 
-      <Container>
-        <MainForm />
-      </Container>
-    </MainTemplate>
-  );
+.genericHtml h3 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.genericHtml p {
+  font-size: 1.6rem;
+  line-height: 1.6;
+  margin-bottom: 1.6rem;
+}
+
+.genericHtml a {
+  color: var(--link-color);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.genericHtml a:hover {
+  text-decoration: underline;
+}
+
+.genericHtml ul {
+  padding-left: 2.4rem;
+}
+
+.genericHtml li {
+  margin-bottom: 0.8rem;
+}
+
+.genericHtml img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.8rem;
+  display: block;
+  margin: 1.6rem 0;
 }
 ```
 
-**A Página de Erro (Not Found)** Já vamos deixar preparada uma página de erro
-para quando implementarmos as rotas e o usuário digitar um endereço que não
-existe.
+## 🚀 2. Aplicando nas Páginas
 
-**Arquivo:** `src/pages/NotFound/index.tsx`
+Agora que temos o nosso "estilizador automático" de textos, vamos aplicá-lo em
+duas páginas: a nossa página de Erro 404 e uma nova página que explica a Técnica
+Pomodoro.
+
+💡 **Dica:** Como o conteúdo dessas páginas é puramente texto (HTML), você pode
+simplesmente copiar os códigos abaixo para economizar tempo de digitação.
+
+**Página 404 Atualizada** **Arquivo:** `src/pages/NotFound/index.tsx`
 
 ```tsx
 import { Container } from '../../components/Container';
+import { GenericHtml } from '../../components/GenericHtml';
+import { Heading } from '../../components/Heading';
 import { MainTemplate } from '../../templates/MainTemplate';
 
 export function NotFound() {
   return (
     <MainTemplate>
       <Container>
-        <h1>Página não encontrada</h1>
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia, at
-          et reiciendis eos ipsum earum?
-        </p>
+        <GenericHtml>
+          <Heading>404 - Página não encontrada 🚀</Heading>
+          <p>
+            Opa! Parece que a página que você está tentando acessar não existe.
+            Talvez ela tenha tirado férias, resolvido explorar o universo ou se
+            perdido em algum lugar entre dois buracos negros. 🌌
+          </p>
+          <p>
+            Mas calma, você não está perdido no espaço (ainda). Dá pra voltar em
+            segurança para a <a href='/'>página principal</a> ou{' '}
+            <a href='/history'>para o histórico</a> — ou pode ficar por aqui e
+            fingir que achou uma página secreta que só os exploradores mais
+            legais conseguem acessar. 🧭✨
+          </p>
+          <p>
+            Se você acha que essa página deveria existir (ou se quiser bater um
+            papo sobre viagem no tempo e buracos de minhoca), é só entrar em
+            contato. Caso contrário, use o menu para voltar ao mundo real.
+          </p>
+          <p>
+            Enquanto isso, fica aqui uma reflexão: "Se uma página não existe na
+            internet, será que ela existiu de verdade?" 🤔💭
+          </p>
+        </GenericHtml>
       </Container>
     </MainTemplate>
   );
 }
 ```
 
-## 🧹 4. Limpando o `App.tsx`
+**Nova Página: Sobre o Pomodoro** Crie a pasta `AboutPomodoro` dentro de `pages`
+e cole o conteúdo:
 
-Lembra como o nosso `App.tsx` estava gigante? Agora, a única responsabilidade
-dele é importar a página inicial. Mais para frente, é aqui que configuraremos o
-nosso roteador (React Router).
-
-**Arquivo:** `src/App.tsx`
+**Arquivo:** `src/pages/AboutPomodoro/index.tsx`
 
 ```tsx
-import { Home } from './pages/Home';
+import { Container } from '../../components/Container';
+import { GenericHtml } from '../../components/GenericHtml';
+import { Heading } from '../../components/Heading';
+import { MainTemplate } from '../../templates/MainTemplate';
 
-import './styles/theme.css';
-import './styles/global.css';
+export function AboutPomodoro() {
+  return (
+    <MainTemplate>
+      <Container>
+        <GenericHtml>
+          <Heading>A Técnica Pomodoro 🍅</Heading>
 
-export function App() {
-  return <Home />;
+          <p>
+            A Técnica Pomodoro é uma metodologia de produtividade criada por{' '}
+            <strong>Francesco Cirillo</strong>, que consiste em dividir o
+            trabalho em blocos de tempo intercalados com pausas.
+          </p>
+
+          <img
+            src='[https://placehold.co/1920x1080](https://placehold.co/1920x1080)'
+            alt='Exemplo'
+          />
+
+          <h2>Como funciona o Pomodoro tradicional?</h2>
+          <ul>
+            <li>
+              <strong>1. Defina uma tarefa</strong> que você deseja realizar.
+            </li>
+            <li>
+              <strong>2. Trabalhe nela por 25 minutos</strong> sem interrupções.
+            </li>
+            <li>
+              <strong>3. Faça uma pausa curta de 5 minutos</strong>.
+            </li>
+            <li>
+              <strong>4. A cada 4 ciclos, faça uma pausa longa</strong> (15 a 30
+              minutos).
+            </li>
+          </ul>
+
+          <h2>
+            Mas no <strong>Chronos Pomodoro</strong> tem um diferencial 🚀
+          </h2>
+          <p>
+            Nosso app segue o conceito original, mas com algumas melhorias e
+            personalizações pra deixar o processo ainda mais eficiente.
+          </p>
+
+          {/* Pode adicionar o resto do texto explicativo aqui! */}
+        </GenericHtml>
+      </Container>
+    </MainTemplate>
+  );
 }
 ```
+
+## 🛠️ 3. Testando as Páginas
+
+Para ver se tudo ficou bonito, vá até o seu `App.tsx` e troque temporariamente o
+componente `<Home />` por `<NotFound />` ou `<AboutPomodoro />`. Você vai
+perceber que os títulos, parágrafos e listas já assumiram um espaçamento e
+tamanho de fonte muito agradáveis, com suporte nativo ao nosso tema
+claro/escuro!
+
+Volte o `App.tsx` para `<Home />` quando terminar de testar.
